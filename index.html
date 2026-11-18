@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1013">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<title>단기 매수 신호</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--bg:#0f1013;--panel:#16181d;--panel2:#1c1f25;--line:#262a31;--ink:#e8eaed;--ink2:#b0b8c1;--mute:#7d8691;--up:#f04452;--dn:#3182f6;--buy:#ffd43b;--sell:#c084fc;--acc:#e8eaed}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;font-size:13px}
+button{font-family:inherit}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:20}
+.brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.2px}
+.brand .sub{color:var(--mute);font-size:12px}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:flex;background:var(--panel2);border-radius:8px;padding:3px}
+.seg button{background:none;border:0;color:var(--ink2);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12.5px}
+.seg button.on{background:var(--ink);color:#111;font-weight:700}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12.5px}
+.btn:hover{border-color:#3a404a}
+.btn.pri{background:var(--ink);color:#111;border-color:var(--ink);font-weight:700}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px 18px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card-h{font-weight:700;font-size:13.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.card-h .note{font-weight:400;color:var(--mute);font-size:11.5px}
+table{width:100%;border-collapse:collapse}
+th{color:var(--mute);font-weight:500;font-size:11.5px;text-align:right;padding:6px 6px;border-bottom:1px solid var(--line)}
+td{padding:7px 6px;text-align:right;border-bottom:1px solid #1f232a;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+#wl tr.row{cursor:pointer}
+#wl tr.row:hover td{background:#1b1e24}
+#wl tr.sel td{background:#20242b}
+.tk{font-weight:700}
+.tk small{display:block;white-space:nowrap;color:var(--mute);font-weight:400;font-size:10.5px}
+.meter{display:inline-flex;align-items:center;gap:6px}
+.meter .bar{width:44px;height:6px;background:#2a2f37;border-radius:3px;position:relative;overflow:hidden}
+.meter .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.b-buy{background:rgba(240,68,82,.16);color:#ff7b86}
+.b-sell{background:rgba(49,130,246,.18);color:#7fb2ff}
+.b-wait{background:rgba(255,212,59,.12);color:var(--buy)}
+.b-neu{background:#262a31;color:var(--ink2)}
+.b-sig-buy{background:rgba(255,212,59,.16);color:var(--buy)}
+.b-sig-sell{background:rgba(192,132,252,.16);color:var(--sell)}
+.x{background:none;border:0;color:var(--mute);cursor:pointer;font-size:14px;padding:0 2px}
+.x:hover{color:var(--ink)}
+.drop{border:1.5px dashed #343a44;border-radius:10px;padding:14px;text-align:center;color:var(--ink2);cursor:pointer;transition:.15s}
+.drop.over{border-color:var(--buy);background:rgba(255,212,59,.05)}
+.drop b{color:var(--ink)}
+textarea,input[type=text],input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+textarea{height:90px;resize:vertical}
+.row2{display:flex;gap:8px;margin-top:8px}
+.guide{color:var(--ink2);font-size:12.3px;line-height:1.65}
+.guide code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:11.5px;color:var(--ink);word-break:break-all}
+.guide ol{padding-left:18px;margin:6px 0}
+.verdict{display:grid;grid-template-columns:260px 1fr 1fr;gap:18px}
+@media (max-width:1250px){.verdict{grid-template-columns:1fr 1fr}.verdict .v-main{grid-column:1/-1}}
+@media (max-width:700px){.verdict{grid-template-columns:1fr}}
+.v-main .name{font-size:20px;font-weight:700}
+.v-main .px{font-size:24px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.v-main .chg{font-size:13px;margin-left:6px}
+.v-main .dt{color:var(--mute);font-size:11.5px;margin-top:2px}
+.big{font-size:18px;padding:5px 14px;margin-top:12px}
+.score{display:flex;align-items:baseline;gap:6px;margin-top:12px}
+.score .n{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.score .of{color:var(--mute)}
+.gauge{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--dn) 0 35%,#3a3f48 35% 65%,var(--up) 65% 100%);position:relative;margin-top:6px;opacity:.85}
+.gauge i{position:absolute;top:-4px;width:3px;height:16px;background:var(--ink);border-radius:2px;transform:translateX(-1px)}
+.gl{display:flex;justify-content:space-between;color:var(--mute);font-size:10.5px;margin-top:4px}
+.v-col h3{font-size:12.5px;color:var(--mute);font-weight:500;margin:0 0 8px}
+.rs{list-style:none;margin:0;padding:0}
+.rs li{padding:6px 0;border-bottom:1px solid #1f232a;display:flex;gap:8px;line-height:1.45;color:var(--ink2)}
+.rs li:last-child{border-bottom:0}
+.rs .ic{flex:0 0 16px;font-size:11px;padding-top:2px;text-align:center}
+.rs b{color:var(--ink);font-weight:500}
+.pos{color:#ff7b86}.neg{color:#7fb2ff}.zer{color:var(--mute)}
+.charts{padding:6px 6px 8px}
+.pane{position:relative;border-bottom:1px solid var(--line)}
+.pane:last-child{border-bottom:0}
+.pane .cv{width:100%}
+#c-price{height:360px}#c-vol{height:100px}#c-rsi{height:120px}#c-macd{height:130px}#c-score{height:120px}
+.lg{position:absolute;left:8px;top:6px;z-index:5;pointer-events:none;font-size:11.5px;color:var(--ink2);display:flex;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums;background:rgba(22,24,29,.7);padding:1px 4px;border-radius:4px}
+.lg b{color:var(--ink);font-weight:700}
+.lg .k{color:var(--mute)}
+.sw{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:1250px){.grid2{grid-template-columns:1fr}}
+.grid2 .card{margin-bottom:0}
+.small{color:var(--mute);font-size:11.5px;line-height:1.55;margin-top:8px}
+.disc{color:var(--mute);font-size:11.5px;margin:14px 2px 30px;line-height:1.6}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(640px,100%);max-height:90vh;overflow:auto;padding:18px}
+.mbox h2{font-size:16px;margin:0 0 4px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px;margin-top:14px}
+@media (max-width:560px){.fgrid{grid-template-columns:1fr 1fr}}
+.fgrid label{font-size:11.5px;color:var(--ink2);display:block}
+.fgrid label input{margin-top:4px}
+.fsec{grid-column:1/-1;font-weight:700;font-size:12px;color:var(--ink);margin-top:6px;border-top:1px solid var(--line);padding-top:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2a2f37;color:var(--ink);padding:9px 16px;border-radius:8px;font-size:12.5px;opacity:0;transition:.2s;pointer-events:none;z-index:60;max-width:90vw}
+.toast.on{opacity:1}
+.empty{color:var(--mute);text-align:center;padding:40px 10px}
+.flag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:#3a2f12;color:#ffd43b;margin-left:6px;vertical-align:middle;font-weight:500}
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;color:var(--ink2);font-size:11.5px;padding:6px 8px 2px}
+.legend-row span{display:inline-flex;align-items:center;gap:5px}
+.mk{font-size:12px}
+
+.wrap{padding:14px 18px;max-width:1500px;margin:0 auto}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;color:var(--ink);font-family:inherit}
+.tile:hover{border-color:#3a404a}.tile.on{border-color:var(--ink)}
+.tile .l{color:var(--mute);font-size:12px}.tile .v{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .s{color:var(--mute);font-size:11px;margin-top:2px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12.5px}
+#q{width:180px;font-family:inherit}
+.scan th{cursor:pointer;user-select:none;white-space:nowrap}
+.scan th.sorted{color:var(--ink)}
+.scan td{white-space:nowrap}
+.scan tr.row{cursor:pointer}.scan tr.row:hover td{background:#1b1e24}
+.scan .nm{color:var(--mute);font-size:11px;max-width:170px;overflow:hidden;text-overflow:ellipsis;display:block}
+.tblwrap{overflow-x:auto}
+.more{display:block;margin:12px auto 0}
+.status{color:var(--ink2);font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block}
+.prog{height:3px;background:#262a31;border-radius:2px;overflow:hidden;width:160px}.prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .2s}
+.detail{display:none;scroll-margin-top:80px}.detail.on{display:block}
+.dhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.err{background:#2a1a1d;border:1px solid #4a2a30;color:#ffb3ba;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;line-height:1.6}
+.sec td{cursor:pointer}.sec tr:hover td{background:#1b1e24}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+@media (max-width:1100px){.two{grid-template-columns:1fr}}
+.two .card{margin-bottom:0}
+
+.b-a{background:rgba(255,212,59,.18);color:var(--buy)}
+.b-b{background:#2a2f37;color:var(--ink2)}
+.b-rec{background:#ffd43b;color:#111}
+.b-c{background:rgba(45,212,191,.16);color:#5eead4}
+.b-near{background:rgba(255,212,59,.07);color:#cdb45a}
+.b-out{background:transparent;color:var(--mute)}
+.gauge2{display:flex;align-items:baseline;gap:8px}
+.breadth{height:150px}
+.plan{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12.3px;line-height:1.7;color:var(--ink2)}
+.plan b{color:var(--ink)}
+.res td,.res th{font-size:12px}
+.hl td{background:rgba(255,212,59,.06)}
+#c-r2{height:120px}
+.res .nm{display:block;color:var(--mute);font-size:11px;font-weight:400}
+.res .tk{font-weight:700}
+
+/* ---- mobile / PWA ---- */
+#track,#research,#top-anchor{scroll-margin-top:80px}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.top{padding-top:calc(14px + env(safe-area-inset-top))}
+.bnav{display:none}
+@media (max-width:760px){
+  body{font-size:13.5px}
+  .top{padding:calc(10px + env(safe-area-inset-top)) 12px 10px;gap:8px}
+  .brand .sub{display:none}
+  .brand h1{font-size:16px}
+  .ctrls{width:100%;justify-content:space-between}
+  .status{font-size:11px;flex:1;min-width:0}
+  .status span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wrap{padding:10px 10px 84px}
+  .tiles{grid-template-columns:repeat(2,1fr);gap:8px}
+  .tile{padding:10px 12px}.tile .v{font-size:21px}
+  .card{padding:12px;border-radius:12px}
+  .two{grid-template-columns:1fr}
+  .breadth{height:120px}
+  #c-price{height:280px}#c-vol{height:80px}#c-r2{height:90px}#c-rsi{height:100px}#c-macd{height:110px}
+  .scan th:nth-child(2),.scan td:nth-child(2),.scan th:nth-child(5),.scan td:nth-child(5),.scan th:nth-child(7),.scan td:nth-child(7),.scan th:nth-child(8),.scan td:nth-child(8),.scan th:nth-child(10),.scan td:nth-child(10),.scan th:nth-child(11),.scan td:nth-child(11),.scan th:nth-child(12),.scan td:nth-child(12),.scan th:nth-child(13),.scan td:nth-child(13){display:none}
+  .scan td,.scan th{padding:8px 4px}
+  .scan .nm{max-width:110px}
+  .res{display:block;overflow-x:auto;white-space:nowrap}
+  .res td{white-space:nowrap}
+  .filters select,.filters input{flex:1 1 45%}
+  #q{width:auto}
+  .lg{font-size:10.5px;gap:6px}
+  .legend-row{font-size:10.5px;gap:8px}
+  .verdict{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(15,16,19,.96);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));justify-content:space-around;backdrop-filter:blur(8px)}
+  .bnav a{flex:1;text-align:center;color:var(--ink2);text-decoration:none;font-size:11px;padding:4px 0;display:flex;flex-direction:column;gap:2px;align-items:center}
+  .bnav a b{font-size:17px;font-weight:400;line-height:1}
+  .disc{font-size:10.5px}
+  html,body{overflow-x:hidden}
+  .two>*,.grid2>*,.card{min-width:0}
+  .card-h{flex-wrap:wrap;gap:4px}
+  .scan th:nth-child(6),.scan td:nth-child(6){display:none}
+  .scan .badge{white-space:normal;line-height:1.3}
+  .plan{font-size:12px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>S&amp;P 500 단기 매수 신호</h1>
+    <div class="sub">일봉 · ★추천: RSI(14) 30 회복 + MACD 양전환 + 조용한 거래량 → 다음 날 시가 매수, +3% 익절(최대 5거래일)</div>
+  </div>
+  <div class="ctrls">
+    <div class="status" id="status"><span>준비 중…</span></div>
+    <button class="btn" id="btnRefresh">↻ 최신 데이터</button>
+    <button class="btn" id="btnCfg">⚙ 설정</button>
+  </div>
+</header>
+
+<div class="wrap" id="top-anchor">
+  <div id="errBox"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="two" style="margin-bottom:14px">
+    <section class="card" style="margin:0">
+      <div class="card-h">시장 과매도 비율 <span class="note">S&amp;P 500 중 RSI(2)가 기준 아래인 종목 비율 · 매수 신호의 전제 조건</span></div>
+      <div class="breadth" id="c-br"></div>
+    </section>
+    <section class="card" style="margin:0" id="ruleNow"></section>
+  </div>
+
+  <section class="card detail" id="detail">
+    <div class="dhead"><div class="card-h" style="margin:0">종목 상세</div><button class="btn" id="btnClose">닫기 ✕</button></div>
+    <div class="verdict" id="verdict" style="margin-bottom:14px"></div>
+    <div class="charts" style="border-top:1px solid var(--line)">
+      <div class="legend-row">
+        <span><span class="mk" style="color:var(--buy)">▲</span>매수 신호(시장 약세일)</span>
+        <span><span class="mk" style="color:#8b95a1">▲</span>단독 과매도(평소 날 · 비추천)</span>
+        <span><span class="mk" style="color:#5eead4">●</span>확인형 매수 (RSI(14) 30 상향 돌파 + MACD 히스토그램 양수)</span>
+        <span><span class="sw" style="background:rgba(229,232,235,.6)"></span>5일선</span>
+        <span><span class="sw" style="background:#f5a623"></span>20일선</span>
+        <span><span class="sw" style="background:#2dd4bf"></span>200일선</span>
+      </div>
+      <div class="pane"><div class="lg" id="lg-price"></div><div class="cv" id="c-price"></div></div>
+      <div class="pane"><div class="lg" id="lg-vol"></div><div class="cv" id="c-vol"></div></div>
+      <div class="pane"><div class="lg" id="lg-r2"></div><div class="cv" id="c-r2"></div></div>
+      <div class="pane"><div class="lg" id="lg-rsi"></div><div class="cv" id="c-rsi"></div></div>
+      <div class="pane"><div class="lg" id="lg-macd"></div><div class="cv" id="c-macd"></div></div>
+    </div>
+    <section class="card" id="hist" style="margin:14px 0 0"></section>
+  </section>
+
+  <section class="card" id="list-anchor" style="scroll-margin-top:80px">
+    <div class="card-h">종목별 상태 <span class="note" id="cntNote"></span></div>
+    <div class="filters">
+      <select id="fSt"><option value="rec">★ 오늘 추천 (신규 진입 가능)</option><option value="rech">★ 추천 진행 중 (이미 산 경우)</option><option value="cand">추천 후보 순위 (RSI(14) 30 아래)</option><option value="sig">시장 과매도 매수 신호 (최근 N일)</option><option value="conf">확인형 매수 (최근 N일)</option><option value="any">둘 중 하나라도 (최근 N일)</option><option value="hold">보유 기간 중 (신호 후 5일 이내)</option><option value="b">단독 과매도</option><option value="near">신호 근접 (RSI(2)&lt;25)</option><option value="up">200일선 위 전체</option><option value="all">전체 종목</option></select>
+      <select id="fSec"><option value="">전체 섹터</option></select>
+      <input type="text" id="q" placeholder="티커·종목명 검색">
+    </div>
+    <div class="tblwrap"><table class="scan" id="scan"><thead></thead><tbody></tbody></table></div>
+    <button class="btn more" id="btnMore" style="display:none">더 보기</button>
+  </section>
+
+  <section class="card" id="track"></section>
+  <section class="card" id="research"></section>
+
+  <p class="disc">데이터: 구글 파이낸스(GOOGLEFINANCE) 일봉을 공개된 구글 시트 12개에서 받아 계산합니다. 시세는 지연될 수 있고, 최신 봉은 직전 미국 거래일 종가 기준입니다. 수익률은 수수료·환전 비용을 빼기 전 값입니다. 신호와 통계는 과거 데이터로 계산한 참고 정보이며 미래 수익을 보장하지 않습니다. 투자 판단과 책임은 본인에게 있습니다. 차트: <a href="https://www.tradingview.com/" style="color:var(--mute)">TradingView Lightweight Charts™</a>.</p>
+</div>
+
+<div class="modal" id="cfgModal"><div class="mbox">
+  <h2>신호 설정</h2>
+  <div class="small" style="margin-top:0">기본값은 과거 검증에서 쓴 값입니다. 바꾸면 화면의 신호는 다시 계산되지만, <b>아래 검증표는 기본값 기준 그대로</b>이며 화면에 경고가 표시됩니다.</div>
+  <div class="fgrid" id="cfgGrid"></div>
+  <div class="row2" style="justify-content:flex-end;margin-top:16px">
+    <button class="btn" id="cfgReset">기본값</button><button class="btn" id="cfgClose">취소</button><button class="btn pri" id="cfgSave">적용</button>
+  </div>
+</div></div>
+<div class="toast" id="toast"></div>
+<nav class="bnav"><a href="#top-anchor"><b>★</b>추천</a><a href="#list-anchor"><b>☰</b>종목</a><a href="#track"><b>◷</b>추적</a><a href="#research"><b>✓</b>검증</a><a href="#" id="navRefresh"><b>↻</b>새로고침</a></nav>
+
+<script>
+(function(){
+'use strict';
+const UP='#f04452', DN='#3182f6', BUY='#ffd43b', MA1C='#f5a623', MA2C='#2dd4bf';
+const DEF={r2Th:10,brTh:10,brCrash:25,hold:5,recent:3,maLong:200,tp:3,recVol:1};
+const CFG_META=[['★ 추천 규칙',null],['tp','익절 목표 %'],['recVol','추천 거래량 상한 (평균 대비 배)'],['시장 과매도 규칙',null],['r2Th','RSI(2) 과매도 기준 (미만)'],['maLong','추세선 (일)'],['시장 조건',null],['brTh','시장 과매도 비율 기준 % (이상)'],['brCrash','급락일 기준 %'],['매매',null],['hold','보유 거래일'],['recent','"최근 신호"로 볼 거래일']];
+const FILES=[{"id": "1Q3ipKabvR43pzQTeJL88j7ZWrBbs_LXrdWCYf7VFze8", "alt": "1FFr7SakZpSSd9r58bYF3EN1gJSCtWRUDE-ktsfQGcyg"}, {"id": "1H1Ud6PCKvVvVBpEULAJfVbPOIRN8b-9Ka2WyAiilCr0", "alt": "1RMDGyEeqWlyYjDsWXHJ957ZVxE81qsyzZriUohK3rwU"}, {"id": "1JJX2r0RxGtd-X-oELOWO3fgt02jeiVRoEkmYD1WMJG8", "alt": "1e0rKwKpAD83B-QbNEfIk__vQgv6stYArS3KgoLiMBpY"}, {"id": "1pHbKIiaKo6an15j8Awee8GdfcMQnqy7ncRj8fnwMgIU", "alt": "1E2UrRbPMG813GMGE-PQw5suBGjTi6OZjydzjLau6Pt8"}, {"id": "1pukNM9GSj8PSUUIX1jKqCTvrsbPnjyBlH2g4INi_yUQ", "alt": "1gRd47cz1fLPhWxx0fZLBvEiFZtECqLhkqkaAQLYENWQ"}, {"id": "1KQzI3H0Eebt_187Ql7e9YPprAsg3Fy-XrvcoppvhvnY", "alt": "1ZC6xixwhG4EU58u9S1AT2vPoP3stkgHSELwDkK_ThgQ"}, {"id": "16HlICpRD9OBxDpq0YntPJDaWC1qVuFPhfioN0glPggM", "alt": "1DSHWhvgejGOVMp0Jc2jNkNdffJshxcZ7NVB-MOfXlms"}, {"id": "1-7PH6Wl-hUaCqCAkePc_Az6ZuRuWTa2335ggcGdajdY", "alt": "1INEA0L5xyY4jlfVr0_ImOT8bQUzwaK3gfYBHsMGawOA"}, {"id": "1qMKTOruQXCSCs4FhfWp1_VEvQ6rX_VF0iVZIDqIkRGo", "alt": "1ZoUIF_Gpv0H3SX6RlHPPXAwDvGROwax7SYKs3MOr3Mk"}, {"id": "1E_t3TprluzBX5Ke4fUVM88h4cSmn9dGpwxb5n43e72s", "alt": "1KWsjaGS1-B6PwI_CAKEEhPNMQaNQ0bUd8_S19sLKj9I"}, {"id": "1IEMgCIzi2J_uW32c-tN6MCuZCYxmqexOqouK2SpIu3s", "alt": "1HSzHeo2BQGCOSjafpfeNjnGMLT2N2GF0oaLzgDgZXxY"}, {"id": "1bCdkurEOlfFIslZoV6WZuaQ2CMo_jWKli2bOl025i7E", "alt": "13lUxwpAxPMebBks0quVrne90T5YR5Dwkn2rxv4HbBb4"}];
+const SERVER='Google Drive', TOOL='download_file_content';
+const SECTOR_KO={'Information Technology':'정보기술','Health Care':'헬스케어','Financials':'금융','Consumer Discretionary':'경기소비재','Communication Services':'커뮤니케이션','Industrials':'산업재','Consumer Staples':'필수소비재','Energy':'에너지','Utilities':'유틸리티','Real Estate':'부동산','Materials':'소재'};
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+const ST={ds:{},order:[],meta:{},sel:null,cfg:Object.assign({},DEF,LS.get('sp.dcfg.v2',{}))};
+const cache={};
+const UI={sort:{k:'st',d:-1},limit:80};
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+function fmt(v,d){if(v==null||isNaN(v))return '–';if(d==null)d=Math.abs(v)>=1000?0:2;return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function fmtV(v){if(v==null||isNaN(v))return '–';const a=Math.abs(v);if(a>=1e9)return (v/1e9).toFixed(2)+'B';if(a>=1e6)return (v/1e6).toFixed(2)+'M';if(a>=1e3)return (v/1e3).toFixed(1)+'K';return String(Math.round(v))}
+function pct(v,d=1){if(v==null||isNaN(v))return '–';return (v>=0?'+':'')+(v*100).toFixed(d)+'%'}
+function cls(v){return v>0?'pos':v<0?'neg':'zer'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3200)}
+
+
+function sma(a,n){const o=new Array(a.length).fill(null);let s=0;const q=[];for(let i=0;i<a.length;i++){const v=a[i];if(v==null||isNaN(v)){q.length=0;s=0;continue}q.push(v);s+=v;if(q.length>n)s-=q.shift();if(q.length===n)o[i]=s/n}return o}
+function ema(a,n){const o=new Array(a.length).fill(null);const k=2/(n+1);let p=null;const b=[];for(let i=0;i<a.length;i++){const v=a[i];if(v==null)continue;if(p==null){b.push(v);if(b.length===n){p=b.reduce((x,y)=>x+y,0)/n;o[i]=p}}else{p=v*k+p*(1-k);o[i]=p}}return o}
+function rsiCalc(c,n){const o=new Array(c.length).fill(null);let g=0,l=0;for(let i=1;i<c.length;i++){const d=c[i]-c[i-1],u=Math.max(d,0),w=Math.max(-d,0);if(i<=n){g+=u;l+=w;if(i===n){g/=n;l/=n;o[i]=l===0?100:100-100/(1+g/l)}}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+w)/n;o[i]=l===0?100:100-100/(1+g/l)}}return o}
+
+/* ---------- data loading ---------- */
+function splitCSV(text){const rows=[];let row=[],cur='',q=false;for(let i=0;i<text.length;i++){const ch=text[i];if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}else if(ch==='"')q=true;else if(ch===','){row.push(cur);cur=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}else cur+=ch}if(cur||row.length){row.push(cur);rows.push(row)}return rows}
+function parseChunk(text){
+  const rows=splitCSV(text);const h=(rows[0]||[]).map(x=>x.trim().toLowerCase());
+  const it=h.indexOf('ticker'),inm=h.indexOf('name'),isc=h.indexOf('sector'),id=h.indexOf('data');
+  if(it<0||id<0)throw new Error('시트 형식이 다릅니다 (ticker/data 열 없음)');
+  const out=[];
+  for(let k=1;k<rows.length;k++){const r=rows[k];const t=(r[it]||'').trim();if(!t)continue;
+    const bars=[];for(const b of String(r[id]||'').split(';')){const p=b.split(',');if(p.length<6||!/^\d{6}$/.test(p[0]))continue;
+      const o=+p[1],hi=+p[2],lo=+p[3],c=+p[4],v=+p[5];if(!(c>0))continue;bars.push({t:'20'+p[0].slice(0,2)+'-'+p[0].slice(2,4)+'-'+p[0].slice(4,6),o:o>0?o:c,h:Math.max(hi||c,o||c,c),l:Math.min(lo||c,o||c,c),c,v:v>0?v:0})}
+    out.push({ticker:t,name:r[inm]||t,sector:r[isc]||'',rows:bars});
+  }
+  return out;
+}
+function b64ToText(b){const bin=atob(b.replace(/\s/g,''));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder('utf-8').decode(u)}
+function looksCSV(s){return typeof s==='string'&&/^﻿?ticker,/i.test(s.trim())}
+function looksB64(s){return typeof s==='string'&&s.length>100&&/^[A-Za-z0-9+/=\s]+$/.test(s.slice(0,400))}
+function extractCSV(res){
+  const seen=new Set();let found=null;
+  const visit=(v,depth)=>{if(found||v==null||depth>6)return;
+    if(typeof v==='string'){if(looksCSV(v)){found=v;return}if(looksB64(v)){try{const t=b64ToText(v);if(looksCSV(t)){found=t;return}}catch(e){}}
+      if(v.length<2e6&&/^[\[{]/.test(v.trim())){try{visit(JSON.parse(v),depth+1)}catch(e){}}return}
+    if(typeof v!=='object'||seen.has(v))return;seen.add(v);
+    for(const k of ['payload','structuredContent','content','resource','blob','text','data','contents'])if(k in v)visit(v[k],depth+1);
+    if(Array.isArray(v))v.forEach(x=>visit(x,depth+1));else for(const k in v)visit(v[k],depth+1);
+  };
+  visit(res,0);return found;
+}
+function shapeOf(res){try{return JSON.stringify(res,(k,v)=>typeof v==='string'&&v.length>80?v.slice(0,80)+'…('+v.length+')':v).slice(0,600)}catch(e){return String(res)}}
+
+let loadedAt=null;
+function setStatus(html){$('#status').innerHTML=html}
+function showErr(html){$('#errBox').innerHTML=html?`<div class="err">${html}</div>`:''}
+function errText(e){
+  const c=e&&e.code;
+  if(c==='server_not_connected'||c==='selection_required')return '구글 드라이브 연결이 필요합니다. claude.ai 설정 → 커넥터에서 <b>Google Drive</b>를 연결한 뒤 새로고침해 주세요.';
+  if(c==='needs_reauth')return '구글 드라이브 연결이 만료되었습니다. claude.ai 설정 → 커넥터에서 <b>Google Drive</b>를 다시 연결해 주세요.';
+  if(c==='not_in_manifest'||c==='approval_required')return '이 페이지가 구글 드라이브를 읽도록 허용되지 않았습니다. 아래 버튼을 눌러 허용해 주세요.';
+  if(c==='blocked_by_policy')return '조직 정책으로 이 페이지에서 구글 드라이브를 사용할 수 없습니다.';
+  if(c==='tool_error')return '시트를 읽지 못했습니다: '+esc(e.message||'')+' (파일이 삭제되었거나 접근 권한이 없을 수 있습니다)';
+  if(c==='server_unavailable')return '구글 드라이브가 잠시 응답하지 않습니다. 잠시 후 다시 시도해 주세요.';
+  return '불러오기 실패: '+esc((e&&(e.message||e.code))||String(e));
+}
+async function loadAll(refresh){
+  showErr('');let done=0;const total=FILES.length;
+  setStatus(`<span>시세 불러오는 중 0/${total}</span><span class="prog"><i id="pg"></i></span>`);
+  const get=async id=>{const u=`https://docs.google.com/spreadsheets/d/${id}/export?format=csv`+(refresh?`&_=${Date.now()}`:'');
+    let r;try{r=await fetch(u,{credentials:'omit',cache:refresh?'reload':'default'})}catch(e){await new Promise(z=>setTimeout(z,800));r=await fetch(u,{credentials:'omit'})}
+    if(!r.ok)throw new Error('HTTP '+r.status);const txt=await r.text();if(!/^\uFEFF?ticker,/i.test(txt.trim()))throw new Error('시트를 읽을 수 없습니다(공개 설정 확인)');return {r,txt}};
+  const one=async f=>{let g;try{g=await get(f.id)}catch(e){if(f.alt)g=await get(f.alt);else throw e}const r=g.r,txt=g.txt;
+    done++;setStatus(`<span>시세 불러오는 중 ${done}/${total}</span><span class="prog"><i id="pg" style="width:${done/total*100}%"></i></span>`);
+    return {list:parseChunk(txt),from:r.headers.get('x-sw-cache')};};
+  const res=await Promise.allSettled(FILES.map(one));const ok=res.filter(r=>r.status==='fulfilled').map(r=>r.value),bad=res.filter(r=>r.status==='rejected');
+  if(!ok.length){showErr('시세를 불러오지 못했습니다. 인터넷 연결을 확인하고 ↻ 최신 데이터를 눌러주세요. ('+esc(String(bad[0].reason&&bad[0].reason.message||bad[0].reason))+')');setStatus('<span>데이터 없음</span>');return}
+  if(bad.length)showErr(`시트 ${total}개 중 ${bad.length}개를 불러오지 못해 일부 종목이 빠졌습니다. ↻ 최신 데이터로 다시 시도해 주세요.`);
+  OFFLINE=ok.some(r=>r.from);
+  ST.ds={};ST.order=[];ST.meta={};Object.keys(cache).forEach(k=>delete cache[k]);
+  for(const r of ok)for(const x of r.list){ST.ds[x.ticker]={rows:x.rows,sample:false};ST.meta[x.ticker]={name:x.name,sector:x.sector};ST.order.push(x.ticker)}
+  loadedAt=Date.now();computeAll();
+}
+let OFFLINE=false;
+/* ---------- analysis ---------- */
+let BR={},BRDATES=[];
+function indicators(rows,cfg){
+  const C=rows.map(r=>r.c),V=rows.map(r=>r.v);
+  const r2=rsiCalc(C,2),r14=rsiCalc(C,14),r14s=sma(r14,9),mL=sma(C,cfg.maLong),m20=sma(C,20),vAvg=sma(V,20);
+  const ef=ema(C,12),es=ema(C,26),macd=C.map((_,i)=>ef[i]!=null&&es[i]!=null?ef[i]-es[i]:null),sig=ema(macd,9),hist=macd.map((m,i)=>m!=null&&sig[i]!=null?m-sig[i]:null);
+  const m5=sma(C,5);return {R:rows,n:rows.length,C,r2,r14,r14s,mL,m20,m5,vAvg,macd,sig,hist};
+}
+function computeBreadth(cfg){
+  const cnt={},tot={};
+  for(const k of ST.order){const a=cache[k];if(!a)continue;a.R.forEach((r,i)=>{if(a.r2[i]==null)return;tot[r.t]=(tot[r.t]||0)+1;if(a.r2[i]<cfg.r2Th)cnt[r.t]=(cnt[r.t]||0)+1})}
+  BR={};BRDATES=Object.keys(tot).filter(t=>tot[t]>=200).sort();BRDATES.forEach(t=>BR[t]=(cnt[t]||0)/tot[t]*100);
+}
+function signalsFor(a,cfg){
+  const out=[];let last=-1e9;const L=a.n-1;
+  for(let i=1;i<a.n;i++){
+    if(a.r2[i]==null||a.mL[i]==null)continue;
+    if(!(a.r2[i]<cfg.r2Th&&a.C[i]>a.mL[i]))continue;
+    if(i-last<=cfg.hold)continue;last=i;
+    const br=BR[a.R[i].t];const type=br!=null&&br>=cfg.brTh?'A':'B';
+    const entry=i+1<a.n?a.R[i+1].o:null;
+    const done=i+cfg.hold<a.n;const exitC=done?a.C[i+cfg.hold]:a.C[L];
+    out.push({i,t:a.R[i].t,type,br,entry,ret:entry?exitC/entry-1:null,done,held:Math.min(L-i,cfg.hold),left:done?0:cfg.hold-(L-i),d3:i>=3?a.C[i]/a.C[i-3]-1:0,dist:a.C[i]/a.mL[i]-1});
+  }
+  return out;
+}
+function confSignals(a,cfg){
+  const out=[];let last=-1e9;const L=a.n-1;
+  for(let i=5;i<a.n;i++){
+    if(a.r14[i]==null||a.r14[i-1]==null||a.hist[i]==null)continue;
+    if(!(a.r14[i-1]<30&&a.r14[i]>=30&&a.hist[i]>0))continue;
+    if(i-last<=cfg.hold)continue;last=i;
+    const entry=i+1<a.n?a.R[i+1].o:null;const done=i+cfg.hold<a.n;const exitC=done?a.C[i+cfg.hold]:a.C[L];
+    const vr=a.vAvg[i-1]>0?a.R[i].v/a.vAvg[i-1]:null;
+    const g={vr,rec:vr!=null&&vr<cfg.recVol,i,t:a.R[i].t,type:'C',entry,ret:entry?exitC/entry-1:null,done,left:done?0:cfg.hold-(L-i),r14:a.r14[i],h:a.hist[i],br:BR[a.R[i].t]};
+    if(entry){const tgt=entry*(1+cfg.tp/100);let hit=null;for(let k=1;k<=cfg.hold&&i+k<=L;k++){if(a.R[i+k].h>=tgt){hit=k;break}}
+      const kNow=Math.min(cfg.hold,L-i);
+      g.tp={tgt,hit,ret:hit?cfg.tp/100:(done?a.C[i+cfg.hold]/entry-1:a.C[L]/entry-1),done:!!hit||done,k:hit||kNow,left:hit?0:Math.max(0,cfg.hold-kNow)};}
+    else g.tp={tgt:null,hit:null,ret:null,done:false,k:0,left:cfg.hold};
+    out.push(g);
+  }
+  return out;
+}
+const CLUT={"0|true":[51,77,333],"0|false":[40,71,374],"-0.1|true":[50,79,131],"-0.1|false":[20,40,157],"-0.2|true":[42,59,170],"-0.2|false":[11,18,247],"-0.35|true":[19,31,340],"-0.35|false":[2,5,508],"-0.5|true":[13,21,394],"-0.5|false":[2,4,609],"-1|true":[6,9,1316],"-1|false":[0,1,2148],"-1000000000|true":[2,3,2013],"-1000000000|false":[0,0,3777]};const CBINS=[[0,1e9],[-0.1,0],[-0.2,-0.1],[-0.35,-0.2],[-0.5,-0.35],[-1,-0.5],[-1000000000,-1]];
+function candProb(a,L){if(a.hist[L]==null||a.hist[L-1]==null)return null;const hn=a.hist[L]/a.C[L]*100,up=a.hist[L]>a.hist[L-1];for(const [lo,hi] of CBINS)if(hn>=lo&&hn<hi){const v=CLUT[lo+'|'+up];return {p:v[0],pc:v[1],n:v[2],hn,up}}return null}
+function computeAll(){
+  const cfg=ST.cfg;
+  for(const k of ST.order)cache[k]=ST.ds[k].rows.length>=60?indicators(ST.ds[k].rows,cfg):null;
+  computeBreadth(cfg);
+  SCAN=[];
+  for(const k of ST.order){const a=cache[k],m=ST.meta[k];
+    if(!a||a.mL[a.n-1]==null){SCAN.push({k,m,short:true,n:ST.ds[k].rows.length,close:ST.ds[k].rows.length?ST.ds[k].rows[ST.ds[k].rows.length-1].c:null});continue}
+    const L=a.n-1,sigs=signalsFor(a,cfg);a.sigs=sigs;const cs=confSignals(a,cfg);a.csigs=cs;const lastC=cs[cs.length-1]||null;const agoC=lastC?L-lastC.i:null;const recs=cs.filter(g=>g.rec);const lastR=recs[recs.length-1]||null;const agoR=lastR?L-lastR.i:null;const last=sigs[sigs.length-1]||null;const ago=last?L-last.i:null;
+    const up=a.C[L]>a.mL[L];
+    let st,stl,stc;
+    const cRecent=lastC&&agoC<cfg.recent,aRecent=last&&last.type==='A'&&ago<cfg.recent,rRecent=lastR&&agoR<cfg.recent;
+    if(lastR&&agoR===0){st=8;stl='★ 신규 진입 가능';stc='b-rec'}
+    else if(lastR&&agoR<=cfg.hold&&lastR.tp&&!lastR.tp.done){st=7.5;stl='★ 추천 진행 중';stc='b-near'}
+    else if(lastR&&agoR<=cfg.hold&&lastR.tp&&lastR.tp.hit){st=6.5;stl='★ 익절 완료';stc='b-c'}
+    else if(cRecent&&aRecent){st=7;stl='매수+확인';stc='b-a'}
+    else if(cRecent){st=6;stl='확인형 매수';stc='b-c'}
+    else if(last&&ago<cfg.recent){st=last.type==='A'?5:3;stl=last.type==='A'?'매수 신호':'단독 과매도';stc=last.type==='A'?'b-a':'b-b'}
+    else if(last&&last.type==='A'&&ago<=cfg.hold){st=4;stl='보유 기간';stc='b-near'}
+    else if(up&&a.r2[L]<25){st=2;stl='신호 근접';stc='b-near'}
+    else if(up){st=1;stl='200일선 위';stc='b-out'}
+    else{st=0;stl='200일선 아래';stc='b-out'}
+    const vr=a.vAvg[L-1]>0?a.R[L].v/a.vAvg[L-1]:null,upc=a.R[L].c>=a.R[L].o;const cand=a.r14[L]!=null&&a.r14[L]<30,cp=cand?candProb(a,L):null;if(cand&&cp&&st<=2){st=2.5;stl=`추천 후보 · 5일 내 ${cp.p}%`;stc='b-near'}
+    SCAN.push({k,m,a,last,ago,lastC,agoC,lastR,agoR,cand,cp,vr,upc,st,stl,stc,close:a.C[L],chg:a.C[L]/a.C[L-1]-1,r2:a.r2[L],r14:a.r14[L],dist:a.C[L]/a.mL[L]-1,lastT:a.R[L].t});
+  }
+  {const byD={};for(const s of SCAN){if(s.short||!s.a.sigs)continue;for(const g of s.a.sigs){if(g.type!=='A')continue;g.tk=s.k;(byD[g.t]=byD[g.t]||[]).push(g)}}
+   for(const d in byD){const a=byD[d];const rk=(key,dir)=>{const z=[...a].sort((p,q)=>(p[key]-q[key])*dir);z.forEach((x,i)=>x['rk_'+key]=i/Math.max(1,z.length-1))};rk('d3',1);rk('dist',-1);
+     [...a].sort((p,q)=>(p.rk_d3+p.rk_dist)-(q.rk_d3+q.rk_dist)).forEach((x,i)=>{x.rank=i+1;x.of=a.length})}}
+  ST.asOf=BRDATES[BRDATES.length-1];
+  const secs=[...new Set(SCAN.map(s=>s.m.sector).filter(Boolean))].sort((a,b)=>(SECTOR_KO[a]||a).localeCompare(SECTOR_KO[b]||b,'ko'));
+  const fs=$('#fSec'),cur=fs.value;fs.innerHTML='<option value="">전체 섹터</option>'+secs.map(s=>`<option value="${esc(s)}">${esc(SECTOR_KO[s]||s)}</option>`).join('');fs.value=cur;
+  const ld=loadedAt?new Date(loadedAt):null;
+  setStatus(`<span class="dot" style="${OFFLINE?'background:#f5a623':''}"></span><span>${OFFLINE?'오프라인 · 저장된 데이터 · ':''}${SCAN.length}종목 · 최근 거래일 ${ST.asOf||'–'}${ld?' · 불러온 시각 '+pad(ld.getMonth()+1)+'/'+pad(ld.getDate())+' '+pad(ld.getHours())+':'+pad(ld.getMinutes()):''}</span>`);
+  renderTiles();renderBreadth();renderRuleNow();renderScan();renderTrack();renderResearch();
+  if(ST.sel&&cache[ST.sel])openDetail(ST.sel,false);
+}
+let SCAN=[];
+function brZone(b){const c=ST.cfg;return b==null?['–','b-out']:b>=c.brCrash?['급락일','b-a']:b>=c.brTh?['약세일','b-a']:['평소','b-out']}
+
+/* ---------- top panels ---------- */
+function renderTiles(){
+  const v=SCAN.filter(s=>!s.short),c=ST.cfg,b=BR[ST.asOf];const [zl]=brZone(b);
+  const a0=v.filter(s=>s.last&&s.ago===0&&s.last.type==='A').length,aR=v.filter(s=>s.st===5).length,bR=v.filter(s=>s.st===3).length,hd=v.filter(s=>s.last&&s.last.type==='A'&&s.ago<=c.hold).length,up=v.filter(s=>s.st>=1).length;
+  const rec=v.filter(s=>s.lastR&&s.agoR===0),rech=v.filter(s=>s.lastR&&s.agoR<=c.hold&&s.lastR.tp&&!s.lastR.tp.done&&s.lastR.entry),cand=v.filter(s=>s.cand);
+  const T0=[['rec','★ 오늘 추천 · 신규 진입',rec.length?`<span style="font-size:${rec.length>2?18:24}px">${rec.slice(0,3).map(s=>s.k).join(' · ')}${rec.length>3?' <span style="font-size:13px;color:var(--mute)">외 '+(rec.length-3)+'</span>':''}</span>`:'0',rec.length?'다음 거래일 시가 매수 · +'+c.tp+'% 익절':'오늘 신규 추천 없음'],['rech','★ 추천 진행 중',rech.length,`이미 산 경우 · 익절가 대기`],['cand','추천 후보',cand.length,'RSI(14) 30 아래 · 반등 시 신호']];
+  const T=[...T0,['br','시장 과매도 비율',b==null?'–':b.toFixed(1)+'%',`${zl} · 기준 ${c.brTh}% 이상이면 신호 유효`],['a0','시장 과매도 매수 신호 (오늘)',a0,`${ST.asOf||''} 종가 기준 · 5일 보유형`],['aR',`최근 ${c.recent}거래일 매수 신호`,aR,'다음 거래일 시가 매수 대상'],['top','오늘 상위 3종목',(()=>{const t=v.filter(s=>s.last&&s.ago===0&&s.last.rank&&s.last.rank<=3).sort((a,b)=>a.last.rank-b.last.rank).map(s=>s.k);return t.length?`<span style="font-size:20px">${t.join(' · ')}</span>`:'–'})(),'3일 낙폭 + 추세선 거리 종합'],['bR','단독 과매도',bR,'시장은 평온 · 과거 성과 나쁨'],['cf',`확인형 매수 (최근 ${c.recent}일)`,v.filter(s=>s.lastC&&s.agoC<c.recent).length,`오늘 ${v.filter(s=>s.lastC&&s.agoC===0).length} · 현재 규칙과 겹침 ${v.filter(s=>s.st===7).length}`]];
+  const keep=['rec','rech','cand','br','a0','top'];$('#tiles').innerHTML=T.filter(t=>keep.includes(t[0])).map(([k,l,n,s])=>`<div class="tile" data-t="${k}"><div class="l">${l}</div><div class="v">${n}</div><div class="s">${s}</div></div>`).join('');
+}
+let brChart=null,brSeries=null;
+function renderBreadth(){
+  if(!window.LightweightCharts)return;
+  if(!brChart){brChart=LightweightCharts.createChart($('#c-br'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#7d8691',fontFamily:"'Noto Sans KR',system-ui",fontSize:11,attributionLogo:false},grid:{vertLines:{visible:false},horzLines:{color:'#1c2027'}},rightPriceScale:{borderVisible:false},timeScale:{borderVisible:false},handleScroll:false,handleScale:false});
+    brSeries=brChart.addHistogramSeries({priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter:v=>v.toFixed(0)+'%'}})}
+  const c=ST.cfg;brSeries.setData(BRDATES.map(t=>({time:t,value:BR[t],color:BR[t]>=c.brCrash?'rgba(240,68,82,.9)':BR[t]>=c.brTh?'rgba(255,212,59,.85)':'rgba(125,134,145,.45)'})));
+  (brSeries._pl||[]).forEach(p=>brSeries.removePriceLine(p));
+  brSeries._pl=[brSeries.createPriceLine({price:c.brTh,color:'rgba(255,212,59,.6)',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'약세'}),brSeries.createPriceLine({price:c.brCrash,color:'rgba(240,68,82,.6)',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'급락'})];
+  brChart.timeScale().fitContent();
+}
+function renderRuleNow(){
+  const c=ST.cfg,b=BR[ST.asOf];const [zl,zc]=brZone(b);const ok=b!=null&&b>=c.brTh;
+  const recNew=SCAN.filter(s=>!s.short&&s.lastR&&s.agoR===0);const recL=SCAN.filter(s=>!s.short&&s.lastR&&s.agoR>=1&&s.agoR<=c.hold).sort((a,b)=>a.agoR-b.agoR);
+  const recTbl=(L,mode)=>`<table class="res"><thead><tr><th>종목</th><th>신호일</th><th>${mode==='new'?'매수':'진입가'}</th><th>익절가 (+${c.tp}%)</th><th>${mode==='new'?'매도 기한':'보유자 진행 상황'}</th></tr></thead><tbody>`+L.map(s=>{const g=s.lastR;return `<tr class="row" data-k="${esc(s.k)}" style="cursor:pointer"><td class="tk">${esc(s.k)}<span class="nm">${esc(s.m.name)}</span></td><td>${s.a.R[g.i].t.slice(5)}${mode==='new'?'':' ('+s.agoR+'일 전)'}</td><td>${mode==='new'?'다음 거래일 시가':fmt(g.entry)}</td><td>${mode==='new'?'시가 +'+c.tp+'%':fmt(g.tp.tgt)}</td><td style="text-align:right">${mode==='new'?c.hold+'거래일째 종가':holdCell(s,c)}</td></tr>`}).join('')+'</tbody></table>';
+  const recHtml=`<div class="card-h">★ 오늘 추천 · 신규 진입 가능 <span class="note">${ST.asOf||''} 미국 종가 기준 신호</span></div>`+(recNew.length?recTbl(recNew,'new'):(()=>{const cl=SCAN.filter(s=>s.cand&&s.cp).sort((a,b)=>(b.cp.p-a.cp.p)||(b.cp.pc-a.cp.pc)||(b.r14-a.r14));return `<div class="plan" style="margin-top:0">오늘 새로 난 추천이 없습니다. RSI(14)가 30 아래인 후보 <b>${cl.length}종목</b>을 <b>5거래일 안에 추천 신호가 날 가능성</b> 순으로 정렬했습니다.</div>`+(cl.length?`<table class="res"><thead><tr><th>순위</th><th>종목</th><th>RSI(14)</th><th>MACD 히스토그램</th><th>5일 내 추천</th><th>확인형</th></tr></thead><tbody>`+cl.slice(0,10).map((s,j)=>`<tr class="row" data-k="${esc(s.k)}" style="cursor:pointer"><td>${j+1}</td><td class="tk">${esc(s.k)}<span class="nm">${esc(s.m.name)}</span></td><td>${fmt(s.r14,1)}</td><td class="${cls(s.cp.hn)}">${s.cp.hn.toFixed(2)}% ${s.cp.up?'↑':'↓'}</td><td><b style="color:${s.cp.p>=30?'var(--buy)':'inherit'}">${s.cp.p}%</b></td><td>${s.cp.pc}%</td></tr>`).join('')+'</tbody></table><div class="small" style="margin-top:4px">확률은 과거 2.8년간 같은 상태(MACD 히스토그램 크기·방향)였던 경우 중 5거래일 안에 신호가 난 비율입니다. MACD 히스토그램이 0에 가깝고 올라가는 중일수록 높고, RSI(14) 수준은 거의 영향이 없었습니다. 신호가 날 가능성의 순위이지 수익 순위가 아닙니다.</div>':'')})())+
+  (recL.length?`<div class="card-h" style="margin-top:12px">이미 신호가 난 추천 · 진행 상황 <span class="note">신호 다음 날 산 경우 기준</span></div>`+recTbl(recL,'hold')+`<div class="small" style="margin-top:4px">이 종목들은 <b>최초 진입 시점이 지났습니다</b>. 지금 새로 사면 기대치가 낮아집니다 (검증: 제때 진입 +1.01%·72% → 1일 늦게 +0.74%·71% → 2일 늦게 +0.67%·68%).</div>`:'')+
+  `<div class="plan"><b>추천 규칙</b>: ① RSI(14)가 30을 아래에서 위로 돌파 ② 같은 날 MACD 히스토그램 양수 ③ 그날 거래량이 직전 20일 평균의 ${c.recVol}배 미만 → <b>다음 거래일 시가 매수</b>, 매수가 +${c.tp}%에 지정가 매도 주문, ${c.hold}거래일 안에 안 닿으면 ${c.hold}일째 종가 매도.<br><span style="color:var(--mute)">검증 2024-01~2026-11 (약 2.8년, 비용 제외): 208건 · 평균 +1.01% · 이익 비율 72% (2024 64% / 2025 78% / 2026 72%) · 같은 방식으로 아무 날 사면 +0.24%·60% · 하위 10% −3.3%, 최악 −12.6% · 왕복 비용 0.2% 반영 시 +0.81%</span></div>`;
+  $('#ruleNow').innerHTML=recHtml+`<div class="card-h" style="margin-top:14px">시장 과매도 판단 <span class="note">${ST.asOf||''} 미국 종가 기준</span></div>
+  <div class="gauge2"><span class="badge ${ok?'b-a':'b-out'}">${ok?'시장 과매도 신호 유효':'시장 과매도 신호 쉼'}</span><span style="color:var(--ink2)">시장 과매도 비율 <b style="color:var(--ink)">${b==null?'–':b.toFixed(1)+'%'}</b> (${zl})</span></div>
+  <div class="plan">${ok?`오늘 매수 신호 종목은 <b>다음 미국 거래일 시가</b>에 사서, 매수일을 포함해 <b>${c.hold}번째 거래일 종가</b>에 파는 것이 검증한 방식입니다. 여러 종목에 같은 금액으로 나눠 담을수록 결과가 통계에 가까워집니다.`:`시장 전체가 평온한 날 혼자 과매도인 종목은 3년간 5일 평균 −0.02%, 오른 비율 49%였습니다. 시장 과매도 비율이 <b>${c.brTh}%</b> 이상으로 올라오는 날을 기다리는 쪽이 낫습니다.`}
+  <br><b>규칙</b>: ① 종가가 ${c.maLong}일선 위 ② RSI(2) &lt; ${c.r2Th} ③ 그날 S&amp;P 500 중 ${c.brTh}% 이상이 같은 과매도 상태</div>`;
+}
+function holdCheck(a,g,cfg){
+  const L=a.n-1,k=L-g.i;if(k<1)return {pending:true};
+  let macd=false,ma5=null;for(let j=g.i+1;j<=L;j++){if(a.hist[j]>0)macd=true;if(ma5==null&&a.m5[j]!=null&&a.C[j]>a.m5[j])ma5=j-g.i}
+  const ma5Now=a.m5[L]!=null&&a.C[L]>a.m5[L];
+  let act,cls_;
+  if(k>=cfg.hold){act='보유 종료 · 종가 매도';cls_='b-out'}
+  else if(ma5Now){act='5일선 회복 → 익절 고려';cls_='b-c'}
+  else if(k>=3&&!macd){act='MACD 미전환 → 정리 고려';cls_='b-b'}
+  else{act='보유 유지';cls_='b-near'}
+  return {k,macd,ma5,ma5Now,act,cls:cls_,left:Math.max(0,cfg.hold-k)};
+}
+function holdCell(s,c){
+  if(s.lastR&&s.agoR<=c.hold){const g=s.lastR,t=g.tp;
+    if(!g.entry)return `<span class="badge b-rec">신규 진입 · 내일 시가</span><div style="font-size:10.5px;color:var(--mute);margin-top:3px">익절 +${c.tp}% · 최대 ${c.hold}일</div>`;
+    if(t.hit)return `<span class="badge b-c">익절 완료 +${c.tp}%</span><div style="font-size:10.5px;color:var(--mute);margin-top:3px">${t.hit}일째 ${fmt(t.tgt)} 도달</div>`;
+    if(t.done)return `<span class="badge b-out">기한 종료 ${pct(t.ret,1)}</span><div style="font-size:10.5px;color:var(--mute);margin-top:3px">${c.hold}일째 종가 매도</div>`;
+    return `<span class="badge b-near">보유 중 · 익절가 ${fmt(t.tgt)} 대기</span><div style="font-size:10.5px;color:var(--mute);margin-top:3px;white-space:nowrap">${t.k}일째 · 현재 ${pct(t.ret,1)} · ${t.left}일 남음</div>`}
+  const pos=[];if(s.last&&s.last.type==='A'&&s.ago<=c.hold)pos.push(s.last);if(s.lastC&&s.agoC<=c.hold)pos.push(s.lastC);
+  if(!pos.length)return '–';const g=pos.sort((x,y)=>y.i-x.i)[0];const h=holdCheck(s.a,g,c);
+  if(h.pending)return '<span style="color:var(--mute);font-size:11px">내일 진입 · '+c.hold+'거래일</span>';
+  const chip=(ok,t)=>`<span style="font-size:10.5px;color:${ok?'#5eead4':'var(--mute)'}">${ok?'✓':'✗'}${t}</span>`;
+  return `<span class="badge ${h.cls}">${h.act}</span><div style="margin-top:3px;white-space:nowrap">${chip(h.macd,'MACD')} ${chip(h.ma5Now,'5일선')} <span style="font-size:10.5px;color:var(--mute)">${h.k}일째·${h.left}일 남음</span></div>`;
+}
+const COLS=[['k','종목'],['sec','섹터'],['close','종가'],['chg','1일'],['r2','RSI(2)'],['r14','RSI(14)'],['dist','200일선 대비'],['vr','거래량'],['st','상태'],['conf','추천/확인형'],['rank','그날 순위'],['sigd','신호일'],['ret','신호 후 수익'],['left','보유 점검']];
+function filtered(){
+  const f=$('#fSt').value,sec=$('#fSec').value,q=$('#q').value.trim().toLowerCase(),c=ST.cfg;
+  return SCAN.filter(s=>{if(sec&&s.m.sector!==sec)return false;if(q&&!(s.k.toLowerCase().includes(q)||s.m.name.toLowerCase().includes(q)))return false;
+    if(f==='all')return true;if(s.short)return false;
+    if(f==='rec')return s.lastR&&s.agoR===0;if(f==='rech')return s.lastR&&s.agoR<=c.hold&&!s.lastR.tp.done;if(f==='cand')return s.cand;if(f==='sig')return s.last&&s.last.type==='A'&&s.ago<c.recent;if(f==='conf')return s.lastC&&s.agoC<c.recent;if(f==='any')return (s.last&&s.last.type==='A'&&s.ago<c.recent)||(s.lastC&&s.agoC<c.recent);if(f==='hold')return (s.last&&s.last.type==='A'&&s.ago<=c.hold)||(s.lastC&&s.agoC<=c.hold);if(f==='b')return s.last&&s.last.type==='B'&&s.ago<c.recent;if(f==='near')return s.st===2||s.st===5||s.st===3;if(f==='up')return s.st>=1;return true});
+}
+function sv(s,k){if(s.short)return -1e9;switch(k){case 'k':return s.k;case 'sec':return SECTOR_KO[s.m.sector]||'';case 'st':return s.st*100000-(s.ago==null?999:s.ago)*1000-(s.last&&s.last.rank&&s.ago<=ST.cfg.hold?s.last.rank:999);case 'sigd':return s.last?-s.ago:-1e9;case 'conf':return s.lastC&&s.agoC<=ST.cfg.hold?-s.agoC:-1e9;case 'rank':return s.last&&s.last.rank&&s.ago<=ST.cfg.hold?-(s.ago*1000+s.last.rank):-1e9;case 'ret':return s.last&&s.last.ret!=null&&s.ago<=ST.cfg.hold?s.last.ret:-1e9;case 'left':return s.last&&!s.last.done?-s.last.left:-1e9;default:return s[k]==null?-1e9:s[k]}}
+function renderScan(){
+  let list=filtered();const {k,d}=UI.sort,c=ST.cfg;if($('#fSt').value==='cand'&&k==='st'){list.sort((a,b)=>((b.cp?b.cp.p:0)-(a.cp?a.cp.p:0))||((b.cp?b.cp.pc:0)-(a.cp?a.cp.pc:0))||((b.r14||0)-(a.r14||0)))}else
+  list.sort((a,b)=>{const x=sv(a,k),y=sv(b,k);return (typeof x==='string'?x.localeCompare(y):x-y)*d||(a.r2||99)-(b.r2||99)});
+  const f=$('#fSt').value;
+  $('#cntNote').textContent=`${list.length}종목`;
+  $('#scan thead').innerHTML='<tr>'+COLS.map(([cc,l])=>`<th data-k="${cc}" class="${k===cc?'sorted':''}">${l}${k===cc?(d<0?' ↓':' ↑'):''}</th>`).join('')+'</tr>';
+  if(!list.length&&(f==='rec'||f==='rech')){$('#scan tbody').innerHTML=`<tr><td colspan="14" class="empty">${f==='rec'?`오늘 새로 난 추천이 없습니다. 이미 진행 중인 추천은 '추천 진행 중', 반등 전 단계인 종목은 필터에서 '추천 후보 (RSI(14) 30 아래)'로 볼 수 있습니다.`:'익절을 기다리는 추천 종목이 없습니다.'}</td></tr>`;$('#btnMore').style.display='none';return}
+  if(!list.length&&(f==='sig')){const b=BR[ST.asOf];$('#scan tbody').innerHTML=`<tr><td colspan="14" class="empty">최근 ${c.recent}거래일 안에 매수 신호가 없습니다. ${b!=null&&b<c.brTh?`시장 과매도 비율이 ${b.toFixed(1)}%로 기준(${c.brTh}%)보다 낮아 신호가 쉬는 중입니다.`:''} 위 필터에서 '신호 근접'을 보면 다음 후보를 볼 수 있습니다.</td></tr>`;$('#btnMore').style.display='none';return}
+  $('#scan tbody').innerHTML=list.slice(0,UI.limit).map(s=>{
+    if(s.short)return `<tr class="row" data-k="${esc(s.k)}"><td class="tk">${esc(s.k)}<span class="nm">${esc(s.m.name)}</span></td><td style="text-align:left;color:var(--mute)">${esc(SECTOR_KO[s.m.sector]||s.m.sector)}</td><td>${fmt(s.close)}</td><td colspan="11" style="text-align:left;color:var(--mute)">데이터 부족 (${s.n}거래일 · 200일선 계산 불가)</td></tr>`;
+    const L=s.last,inHold=L&&L.ago!=null;const showRet=L&&s.ago<=c.hold&&L.ret!=null;
+    return `<tr class="row ${s.st===5?'hl':''}" data-k="${esc(s.k)}"><td class="tk">${esc(s.k)}<span class="nm">${esc(s.m.name)}</span></td>
+    <td style="text-align:left;color:var(--ink2)">${esc(SECTOR_KO[s.m.sector]||s.m.sector)}</td>
+    <td>${fmt(s.close)}</td><td class="${cls(s.chg)}">${pct(s.chg)}</td>
+    <td class="${s.r2<c.r2Th?'neg':''}" style="font-weight:${s.r2<c.r2Th?700:400}">${fmt(s.r2,1)}</td><td>${fmt(s.r14,1)}</td>
+    <td class="${cls(s.dist)}">${pct(s.dist)}</td>
+    <td title="오늘 거래량 ÷ 직전 20일 평균 · 참고용">${s.vr==null?'–':`<span style="color:${s.upc?'#ff7b86':'#7fb2ff'}">${s.upc?'▲':'▼'}</span> <span style="${s.vr>=2?'font-weight:700;color:var(--ink)':s.vr<1?'color:var(--mute)':''}">${s.vr.toFixed(1)}배</span>`}</td>
+    <td><span class="badge ${s.stc}">${s.stl}</span></td>
+    <td>${s.lastC&&s.agoC<=c.hold?`<span style="color:${s.lastC.rec?'#ffd43b':'#5eead4'}">${s.lastC.rec?'★':'●'} ${s.agoC===0?'오늘':s.agoC+'일 전'}</span>${s.lastC.ret!=null?` <span class="${cls(s.lastC.ret)}" style="font-size:11px">${pct(s.lastC.ret,1)}</span>`:''}`:'–'}</td>
+    <td>${L&&L.rank&&s.ago<=c.hold?(L.rank<=3?`<b style="color:var(--buy)">★ ${L.rank}위</b>`:`${L.rank}위`)+`<span style="color:var(--mute);font-size:11px"> /${L.of}</span>`:'–'}</td>
+    <td>${L?`<span style="color:var(--ink2)">${L.type==='A'?'▲':'△'} ${s.a.R[L.i].t.slice(5)}</span> <span style="color:var(--mute);font-size:11px">${s.ago===0?'오늘':s.ago+'일 전'}</span>`:'<span style="color:var(--mute)">–</span>'}</td>
+    <td class="${showRet?cls(L.ret):''}">${showRet?pct(L.ret,2):(L&&s.ago===0?'<span style="color:var(--mute);font-size:11px">내일 시가 진입</span>':'–')}</td>
+    <td style="text-align:right">${holdCell(s,c)}</td></tr>`}).join('')||`<tr><td colspan="14" class="empty">조건에 맞는 종목이 없습니다</td></tr>`;
+  $('#btnMore').style.display=list.length>UI.limit?'block':'none';$('#btnMore').textContent=`더 보기 (${list.length-UI.limit}종목 남음)`;
+}
+
+/* ---------- research (static 3y + live) ---------- */
+const RES={period:'2024-09~2026-11 (약 2.2년)',n:497,
+ rows:[['기준: 아무 종목 아무 날',266651,0.27,52,-4.87,0],
+       ['RSI(2)<10 + 200일선 위 (조건 전체)',7295,0.45,53,-4.68,0],
+       ['└ 평소 날 (시장 과매도 10% 미만)',1833,-0.02,49,null,0],
+       ['└ 약세일 (10~25%) ← 매수 신호',3180,0.65,53,null,1],
+       ['└ 급락일 (25% 이상) ← 매수 신호',2282,0.55,56,null,1],
+       ['그날 신호 중 종합 상위 3종목 ★',755,1.31,55,-6.1,1],
+       ['★ 추천 (2024-01~2026-11): 확인형 + 거래량 평균 미만 + +3% 익절, 최대 5일',208,1.01,72,-3.3,1],
+       ['└ 비교: 아무 날 같은 +3% 익절 방식',0,0.24,60,null,0],
+       ['확인형 매수: RSI(14) 30 상향 돌파 + MACD 히스토그램>0 · 2024 +0.47% / 2025 +0.49% / 2026 +1.82%',288,1.09,63,-5.2,1]],
+ ma:[['200일선 (기본)',5545,0.60,54,-4.5,'0.54 / 0.46 / 0.80',1.31],['50일선',3548,0.82,56,-4.2,'0.69 / 0.69 / 1.06',1.08],['20일선',1497,0.75,56,-4.1,'0.64 / 0.26 / 1.54',0.96]],
+ same:[['약세일, 아무 종목',0.25,52],['급락일, 아무 종목',0.40,52]],
+ years:[['2024 (9~12월)',0.50,0.42,1362],['2025',0.34,0.28,2367],['2026',0.99,0.24,2360]],
+ others:[['RSI(14) 30 상향복귀',0.34,55],['MACD 골든크로스',0.29,53],['20일 신고가 + 거래량 1.5배',0.26,51],['3일 연속 하락 + 200일선 위',0.40,53]]};
+const TRACK={from:'2026-11-17',to:'2026-11-30',label:'11월'};
+function trackTrades(){
+  const out=[];
+  for(const s of SCAN){if(s.short||!s.a)continue;const a=s.a,L=a.n-1;
+    for(const g of (a.csigs||[]))if(g.rec&&g.t>=TRACK.from&&g.t<=TRACK.to){const t=g.tp;out.push({st:'rec',k:s.k,nm:s.m.name,t:g.t,entry:g.entry,pending:!g.entry,done:t.done,ret:t.ret,note:!g.entry?'내일 시가 진입':t.hit?`익절 +${ST.cfg.tp}% (${t.hit}일째)`:t.done?`${ST.cfg.hold}일째 종가`:`보유 ${t.k}일째 · 익절가 ${fmt(t.tgt)}`})}
+    for(const g of (a.sigs||[]))if(g.type==='A'&&g.rank&&g.rank<=3&&g.t>=TRACK.from&&g.t<=TRACK.to){out.push({st:'top3',k:s.k,nm:s.m.name,t:g.t,entry:g.entry,pending:!g.entry,done:g.done,ret:g.entry?g.ret:null,note:!g.entry?'내일 시가 진입':g.done?`${ST.cfg.hold}일째 종가`:`보유 ${g.held}일째 · ${g.left}일 남음`,rank:g.rank})}
+  }
+  return out.sort((x,y)=>y.t.localeCompare(x.t)||x.st.localeCompare(y.st)||(x.rank||0)-(y.rank||0));
+}
+function renderTrack(){
+  const tr=trackTrades(),c=ST.cfg;const f=x=>x==null?'–':`<span class="${cls(x)}">${x>0?'+':''}${(x*100).toFixed(2)}%</span>`;
+  const sum=k=>{const a=tr.filter(x=>x.st===k),d=a.filter(x=>x.done&&x.ret!=null),o=a.filter(x=>!x.done&&!x.pending&&x.ret!=null);const av=z=>z.length?z.reduce((p,q)=>p+q.ret,0)/z.length:null;return {n:a.length,dn:d.length,win:d.length?d.filter(x=>x.ret>0).length/d.length:null,avg:av(d),on:o.length,oavg:av(o),pend:a.filter(x=>x.pending).length}};
+  const R1=sum('rec'),R2=sum('top3');
+  const row=(lab,x)=>`<tr><td>${lab}</td><td>${x.n}</td><td>${x.dn}</td><td>${x.win==null?'–':(x.win*100).toFixed(0)+'%'}</td><td>${f(x.avg)}</td><td>${x.on}${x.on?` (${f(x.oavg)})`:''}</td><td>${x.pend}</td></tr>`;
+  $('#track').innerHTML=`<div class="card-h">${TRACK.label} 실전 추적 <span class="note">신호일 ${TRACK.from} ~ ${TRACK.to} · 신호 다음 날 시가에 샀다고 가정한 가상 매매 · 비용 제외 · 데이터가 갱신될 때마다 자동 재계산</span></div>
+  <table class="res"><thead><tr><th>전략</th><th>신호</th><th>완료</th><th>이익 비율</th><th>완료 평균</th><th>보유 중 (현재)</th><th>진입 대기</th></tr></thead><tbody>
+  ${row(`★ 추천 (+${c.tp}% 익절 · 최대 ${c.hold}일) <span class="nm">과거 검증 72% · +1.01%</span>`,R1)}${row(`시장 과매도 상위 3 (${c.hold}일 보유) <span class="nm">과거 검증 55% · +1.31%</span>`,R2)}</tbody></table>
+  ${tr.length?`<table class="res" style="margin-top:12px"><thead><tr><th>신호일</th><th>전략</th><th>종목</th><th>진입가</th><th>상태</th><th>수익</th></tr></thead><tbody>`+tr.map(x=>`<tr class="row" data-k="${esc(x.k)}" style="cursor:pointer"><td>${x.t}</td><td style="text-align:left"><span class="badge ${x.st==='rec'?'b-rec':'b-a'}">${x.st==='rec'?'★ 추천':'상위 3 · '+x.rank+'위'}</span></td><td class="tk">${esc(x.k)}<span class="nm">${esc(x.nm)}</span></td><td>${x.entry?fmt(x.entry):'–'}</td><td style="color:var(--ink2)">${x.done?'✓ ':''}${x.note}</td><td>${x.pending?'–':f(x.ret)}${!x.done&&!x.pending?' <span class="nm" style="display:inline">진행</span>':''}</td></tr>`).join('')+'</tbody></table>':'<div class="empty">아직 추적 기간의 신호가 없습니다.</div>'}
+  <div class="small">상위 3은 그날 시장 과매도 신호 중 순위 1~3위입니다. 이 표는 현재 설정 기준으로 계산되며, 설정을 바꾸면 결과도 바뀝니다. 이 기간은 과거 검증에 쓰지 않은 <b>새 데이터</b>라 규칙의 실제 성능을 보는 첫 표본입니다.</div>`;
+}
+function cfgChanged(){return Object.keys(DEF).some(k=>ST.cfg[k]!==DEF[k])}
+function renderResearch(){
+  const c=ST.cfg;const f=x=>x==null?'–':`<span class="${cls(x)}">${x>0?'+':''}${x.toFixed(2)}%</span>`;
+  // live recompute over loaded window
+  const live={A:[],B:[],C:[],T3:[],AC:[],REC:[]};for(const s of SCAN){if(s.short||!s.a.sigs)continue;for(const g of s.a.sigs)if(g.done&&g.ret!=null){live[g.type].push(g.ret);if(g.type==='A'&&g.rank<=3)live.T3.push(g.ret)}
+    for(const g of (s.a.csigs||[]))if(g.rec&&g.tp&&g.tp.done&&g.tp.ret!=null)live.REC.push(g.tp.ret);
+    for(const g of (s.a.csigs||[]))if(g.done&&g.ret!=null){live.C.push(g.ret);if(s.a.sigs.some(x=>x.type==='A'&&Math.abs(x.i-g.i)<=5))live.AC.push(g.ret)}}
+  const st=a=>a.length?{n:a.length,avg:a.reduce((p,q)=>p+q,0)/a.length*100,win:a.filter(x=>x>0).length/a.length*100}:null;
+  const la=st(live.A),lb=st(live.B),lc=st(live.C),l3=st(live.T3),lac=st(live.AC),lrec=st(live.REC);const row=(n,x)=>`<tr><td>${n}</td><td>${x?x.n:0}</td><td>${x?f(x.avg):'–'}</td><td>${x?x.win.toFixed(0)+'%':'–'}</td></tr>`;
+  $('#research').innerHTML=(cfgChanged()?`<div class="err" style="background:#2a2410;border-color:#5a4a12;color:#ffd43b">⚠ 설정을 기본값에서 바꿨습니다. 아래 검증표는 <b>기본값 기준</b> 결과라 현재 화면의 신호와 맞지 않습니다. 현재 설정의 성과는 '실전 추적'표에서만 확인할 수 있습니다. <button class="btn" id="btnDef" style="margin-left:8px">기본값으로 되돌리기</button></div>`:'')+`<div class="card-h">과거 검증 결과 <span class="note">S&amp;P 500 ${RES.n}종목 · 시장 과매도 규칙 ${RES.period} · 비용 제외</span></div>
+  <div class="small" style="margin:-4px 0 10px">⚠ <b>한계</b>: 현재 S&amp;P 500 구성 종목만으로 과거를 계산했습니다(그사이 지수에서 빠진 부진 종목 미포함 → 결과가 실제보다 좋게 나왔을 수 있음). 여러 규칙을 비교해 고른 결과라 실제 성과는 검증치보다 낮을 가능성이 큽니다.</div>
+  <div class="two"><div><table class="res"><thead><tr><th>구분</th><th>건수</th><th>5일 평균</th><th>오른 비율</th><th>하위 10%</th></tr></thead><tbody>
+  ${RES.rows.map(r=>`<tr class="${r[5]?'hl':''}"><td>${r[0]}</td><td>${r[1]?r[1].toLocaleString():'표본'}</td><td>${f(r[2])}</td><td>${r[3]}%</td><td>${r[4]==null?'–':f(r[4])}</td></tr>`).join('')}
+  </tbody></table>
+  <table class="res" style="margin-top:12px"><thead><tr><th colspan="2">★ 추천 규칙 견고성 검증 (2024-01~2026-11)</th></tr></thead><tbody>
+  <tr><td>파라미터 민감도<br><span class="nm">익절 +2~5% × 거래량 0.75~1.25배</span></td><td>평균 +0.64~1.31% · 이익 비율 65~79% — 모든 조합 플러스, 특정 값에서만 좋은 구조 아님</td></tr>
+  <tr><td>보유 기간</td><td>3일 +0.55%·62% / <b>5일 +1.01%·72%</b> / 7일 +1.12%·74% / 10일 +0.76%·73%</td></tr>
+  <tr><td>전반 → 후반 분리<br><span class="nm">전반 2024-01~2025-05, 후반 2025-06~</span></td><td>전반 +0.75%·67% → 후반 +1.20%·75% (아무 날 같은 방식: 전반 +0.24%, 후반 +0.23%) · 전반 최적 조합은 후반에서도 60개 중 6위, 60개 조합 모두 후반 플러스</td></tr>
+  <tr><td>거래 비용 (왕복)</td><td>0.1% → +0.91%·70% / 0.2% → +0.81%·70%</td></tr>
+  <tr><td>늦은 진입</td><td>제때 +1.01%·72% / 1일 늦게 +0.74%·71% / 2일 늦게 +0.67%·68%</td></tr>
+  <tr><td>포트폴리오 시뮬레이션<br><span class="nm">신호 순서대로 빈 칸에 진입 · 비용 0.15%</span></td><td>10칸(칸당 10%): 연 +20.2% · 최대낙폭 −17.5% · 최장 연속 손실 4건<br>5칸: 연 +30.3% · −24.4% / 20칸: 연 +15.2% · −10.3%<br>비교: 같은 기간 S&amp;P 500(현재 구성) 동일가중 보유 연 +18.2%</td></tr>
+  </tbody></table>
+  <table class="res" style="margin-top:12px"><thead><tr><th>연도별 (약세·급락일 신호)</th><th>신호</th><th>같은 날 아무 종목</th><th>건수</th></tr></thead><tbody>
+  ${RES.years.map(y=>`<tr><td>${y[0]}</td><td>${f(y[1])}</td><td>${f(y[2])}</td><td>${y[3].toLocaleString()}</td></tr>`).join('')}</tbody></table></div>
+  <div><table class="res"><thead><tr><th>비교한 다른 규칙</th><th>5일 평균</th><th>오른 비율</th></tr></thead><tbody>
+  ${RES.others.map(r=>`<tr><td>${r[0]}</td><td>${f(r[1])}</td><td>${r[2]}%</td></tr>`).join('')}</tbody></table>
+  <table class="res" style="margin-top:12px"><thead><tr><th>추세선 기준 비교 (약세·급락일 신호)</th><th>건수</th><th>5일 평균</th><th>오른 비율</th><th>연도별 평균 %</th><th>상위 3</th></tr></thead><tbody>
+  ${RES.ma.map(r=>`<tr><td>${r[0]}</td><td>${r[1].toLocaleString()}</td><td>${f(r[2])}</td><td>${r[3]}%</td><td>${r[5]}</td><td>${f(r[6])}</td></tr>`).join('')}</tbody></table>
+  <table class="res" style="margin-top:12px"><thead><tr><th>실전 추적 · 앱 데이터 (매수 신호 약 4개월 · 확인형 약 1년, 완료된 거래)</th><th>건수</th><th>5일 평균</th><th>오른 비율</th></tr></thead><tbody>
+  ${row('★ 추천 (+'+c.tp+'% 익절 방식)',lrec)}
+  <tr><td>매수 신호 (약세·급락일)</td><td>${la?la.n:0}</td><td>${la?f(la.avg):'–'}</td><td>${la?la.win.toFixed(0)+'%':'–'}</td></tr>
+  ${row('└ 그날 상위 3종목 ★',l3)}${row('확인형 매수',lc)}${row('└ 현재 규칙 신호와 5일 내 겹친 확인형',lac)}
+  <tr><td>단독 과매도 (평소 날)</td><td>${lb?lb.n:0}</td><td>${lb?f(lb.avg):'–'}</td><td>${lb?lb.win.toFixed(0)+'%':'–'}</td></tr></tbody></table><div class="small">새 데이터가 쌓일 때마다 자동으로 갱신되는 실전 추적표입니다. 확인형이 60% 안팎을 유지하는지 여기서 확인하세요.</div>
+  <div class="small"><b>거래량</b>: 표의 거래량 배수는 참고용입니다. 확인형에 '양봉+거래량 급증' 조건을 붙이면 사례가 42건 이하로 줄고 연도별로 불안정했으며(2024 −2.0%), 오히려 거래량 평소 이하의 조용한 반등이 오른 비율 65%로 가장 꾸준했습니다. <b>매도 판단</b>: 기본은 5거래일째 종가. 보유 점검 칸의 'MACD 미전환 → 정리 고려'(3일째)는 큰 손실을 줄이는 방어형, '5일선 회복 → 익절 고려'는 승률형(64%)이며 둘 다 평균 수익은 5일 보유보다 낮았습니다. <b>순위(★)</b>: 그날 매수 신호 종목 중 최근 3일 낙폭이 크고 추세선 위로 많이 떨어져 있는 순. 상위 3종목은 평균이 높지만 변동도 커서 하위 10% 손실이 −6.1%입니다. <b>읽는 법</b>: 매수 신호는 같은 날 아무 종목을 산 것보다 5일 평균 0.1~0.4%p 높았고, 해마다 기준을 이겼지만 2024·2025년은 차이가 작았습니다(+0.06~0.08%p). 우위의 상당 부분은 2026년에서 나왔습니다. 시장이 같이 밀린 날 신호가 한꺼번에 많이 나오므로(하루 100종목 넘는 날도 있음) 한 날에 몰빵하지 말고 금액을 정해 나눠 담는 것이 전제입니다. 왕복 수수료·환전 비용이 0.2~0.5%면 우위 대부분이 사라질 수 있습니다. 이 규칙은 여러 규칙을 비교해 고른 것이라 실제 성과는 검증치보다 낮을 가능성이 큽니다.</div></div></div>`;
+}
+
+/* ---------- detail ---------- */
+const CH={};let CUR=null,xs=false,syncing=false,chartsReady=false;
+const tstr=t=>typeof t==='string'?t:(typeof t==='object'?t.year+'-'+pad(t.month)+'-'+pad(t.day):new Date(t*1000).toISOString().slice(0,10));
+function initCharts(){
+  const LW=window.LightweightCharts;
+  const base={autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#7d8691',fontFamily:"'Noto Sans KR',system-ui,sans-serif",fontSize:11},grid:{vertLines:{color:'#1c2027'},horzLines:{color:'#1c2027'}},rightPriceScale:{borderVisible:false,minimumWidth:78,scaleMargins:{top:.12,bottom:.08}},crosshair:{mode:LW.CrosshairMode.Normal,vertLine:{color:'#4b5563',labelBackgroundColor:'#374151'},horzLine:{color:'#4b5563',labelBackgroundColor:'#374151'}},localization:{locale:'ko-KR',dateFormat:'yyyy-MM-dd'}};
+  const mk=(id,vis,logo)=>LW.createChart(document.getElementById(id),Object.assign({},base,{layout:Object.assign({},base.layout,{attributionLogo:!!logo}),timeScale:{visible:vis,borderVisible:false,rightOffset:4,barSpacing:5}}));
+  CH.price=mk('c-price',false,true);CH.vol=mk('c-vol',false);CH.r2c=mk('c-r2',false);CH.rsi=mk('c-rsi',false);CH.macd=mk('c-macd',true);
+  const nl={priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false};
+  CH.candle=CH.price.addCandlestickSeries({upColor:UP,downColor:DN,borderUpColor:UP,borderDownColor:DN,wickUpColor:UP,wickDownColor:DN});
+  CH.ma5=CH.price.addLineSeries(Object.assign({color:'rgba(229,232,235,.45)',lineWidth:1,lineStyle:2},nl));CH.ma1=CH.price.addLineSeries(Object.assign({color:MA1C,lineWidth:1},nl));CH.ma2=CH.price.addLineSeries(Object.assign({color:MA2C,lineWidth:2},nl));
+  CH.volS=CH.vol.addHistogramSeries({priceFormat:{type:'volume'},priceLineVisible:false,lastValueVisible:false});CH.volA=CH.vol.addLineSeries(Object.assign({color:MA1C,lineWidth:1,priceFormat:{type:'volume'}},nl));
+  CH.vol.priceScale('right').applyOptions({scaleMargins:{top:.25,bottom:0}});
+  const r100=()=>({priceRange:{minValue:0,maxValue:100}});
+  CH.r2S=CH.r2c.addLineSeries({color:BUY,lineWidth:1,priceLineVisible:false,autoscaleInfoProvider:r100});
+  CH.rsiS=CH.rsi.addLineSeries({color:'#e5e8eb',lineWidth:2,priceLineVisible:false,autoscaleInfoProvider:r100});CH.rsiSig=CH.rsi.addLineSeries(Object.assign({color:'#ff9f0a',lineWidth:1},nl));
+  CH.rsiS.createPriceLine({price:70,color:'rgba(240,68,82,.55)',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:''});CH.rsiS.createPriceLine({price:30,color:'rgba(49,130,246,.6)',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:''});
+  CH.hist=CH.macd.addHistogramSeries({priceLineVisible:false,lastValueVisible:false});CH.macdS=CH.macd.addLineSeries({color:'#e5e8eb',lineWidth:2,priceLineVisible:false});CH.sigS=CH.macd.addLineSeries(Object.assign({color:'#ff9f0a',lineWidth:1},nl));
+  CH.hist.createPriceLine({price:0,color:'#3a3f48',lineWidth:1,lineStyle:0,axisLabelVisible:false});
+  const charts=[CH.price,CH.vol,CH.r2c,CH.rsi,CH.macd];CH.all=charts;
+  const primary=new Map([[CH.price,CH.candle],[CH.vol,CH.volS],[CH.r2c,CH.r2S],[CH.rsi,CH.rsiS],[CH.macd,CH.macdS]]);
+  charts.forEach(c=>{
+    c.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(syncing||!r)return;syncing=true;charts.forEach(o=>{if(o!==c)o.timeScale().setVisibleLogicalRange(r)});syncing=false});
+    c.subscribeCrosshairMove(p=>{if(xs||!CUR)return;xs=true;let idx=null;if(p&&p.time!=null)idx=CUR.tIndex.get(tstr(p.time));
+      charts.forEach(o=>{if(o===c)return;if(idx==null){o.clearCrosshairPosition();return}const v=CUR.val(o,idx);if(v==null){o.clearCrosshairPosition();return}try{o.setCrosshairPosition(v,CUR.T[idx],primary.get(o))}catch(e){}});
+      legend(idx==null?CUR.a.n-1:idx);xs=false});
+  });
+}
+function renderCharts(a){
+  const T=a.R.map(r=>r.t),line=arr=>arr.map((v,i)=>v==null?{time:T[i]}:{time:T[i],value:v}),c=ST.cfg;
+  CH.candle.setData(a.R.map(r=>({time:r.t,open:r.o,high:r.h,low:r.l,close:r.c})));CH.ma5.setData(line(a.m5));CH.ma1.setData(line(a.m20));CH.ma2.setData(line(a.mL));
+  CH.volS.setData(a.R.map(r=>({time:r.t,value:r.v*1000,color:r.c>=r.o?'rgba(240,68,82,.75)':'rgba(49,130,246,.75)'})));CH.volA.setData(line(a.vAvg.map(v=>v==null?null:v*1000)));
+  CH.r2S.setData(line(a.r2));(CH.r2S._pl||[]).forEach(p=>CH.r2S.removePriceLine(p));CH.r2S._pl=[CH.r2S.createPriceLine({price:c.r2Th,color:'rgba(255,212,59,.7)',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'신호'})];
+  CH.rsiS.setData(line(a.r14));CH.rsiSig.setData(line(a.r14s));
+  CH.hist.setData(a.hist.map((v,i)=>{if(v==null)return {time:T[i]};const p=a.hist[i-1];const grow=p==null||Math.abs(v)>=Math.abs(p);return {time:T[i],value:v,color:v>=0?(grow?'rgba(240,68,82,.85)':'rgba(240,68,82,.4)'):(grow?'rgba(49,130,246,.85)':'rgba(49,130,246,.4)')}}));
+  CH.macdS.setData(line(a.macd));CH.sigS.setData(line(a.sig));
+  CH.candle.setMarkers([...(a.sigs||[]).map(s=>({time:T[s.i],position:'belowBar',color:s.type==='A'?BUY:'#8b95a1',shape:'arrowUp',text:s.type==='A'?'매수':''})),...(a.csigs||[]).map(s=>({time:T[s.i],position:'aboveBar',color:'#5eead4',shape:'circle',text:'확인'}))].sort((x,y)=>x.time<y.time?-1:x.time>y.time?1:0));
+  CUR={a,T,tIndex:new Map(T.map((t,i)=>[t,i])),val:(o,i)=>o===CH.price?a.C[i]:o===CH.vol?a.R[i].v*1000:o===CH.r2c?a.r2[i]:o===CH.rsi?a.r14[i]:a.macd[i]};
+  const r={from:Math.max(0,a.n-130)-0.5,to:a.n-1+4};syncing=true;CH.all.forEach(ch=>ch.timeScale().setVisibleLogicalRange(r));syncing=false;legend(a.n-1);
+}
+function legend(i){
+  if(!CUR)return;const a=CUR.a,r=a.R[i],c=ST.cfg;if(!r)return;const pc=i>0?r.c/a.R[i-1].c-1:null;const b=BR[r.t];
+  $('#lg-price').innerHTML=`<span class="k">${r.t}</span><span><span class="k">시</span> ${fmt(r.o)}</span><span><span class="k">고</span> ${fmt(r.h)}</span><span><span class="k">저</span> ${fmt(r.l)}</span><span><span class="k">종</span> <b>${fmt(r.c)}</b> <span class="${cls(pc)}">${pct(pc,2)}</span></span><span><span class="sw" style="background:${MA1C}"></span>20일 ${fmt(a.m20[i])}</span><span><span class="sw" style="background:${MA2C}"></span>${c.maLong}일 ${fmt(a.mL[i])}</span>`;
+  $('#lg-vol').innerHTML=`<span><b>거래량</b> ${fmtV(r.v*1000)}</span><span><span class="sw" style="background:${MA1C}"></span>20일 평균 ${fmtV(a.vAvg[i]==null?null:a.vAvg[i]*1000)}</span>`;
+  $('#lg-r2').innerHTML=`<span><b>RSI(2)</b> ${fmt(a.r2[i],1)}</span><span class="k">신호 기준 ${c.r2Th} 미만 · 그날 시장 과매도 ${b==null?'–':b.toFixed(1)+'%'}</span>`;
+  $('#lg-rsi').innerHTML=`<span><b>RSI(14,9)</b> ${fmt(a.r14[i],2)}</span><span><span class="sw" style="background:#ff9f0a"></span>시그널 ${fmt(a.r14s[i],2)}</span>`;
+  $('#lg-macd').innerHTML=`<span><b>MACD(12,26,9)</b> ${fmt(a.macd[i],2)}</span><span><span class="sw" style="background:#ff9f0a"></span>시그널 ${fmt(a.sig[i],2)}</span><span><span class="k">히스토그램</span> <span class="${cls(a.hist[i])}">${fmt(a.hist[i],2)}</span></span>`;
+}
+function openDetail(k,scroll=true){
+  ST.sel=k;const s=SCAN.find(x=>x.k===k);if(!s)return;$('#detail').classList.add('on');
+  if(s.short){$('#verdict').innerHTML=`<div class="empty">${esc(k)} — 데이터가 ${s.n}거래일뿐이라 200일선을 계산할 수 없습니다.</div>`;$('#hist').innerHTML='';if(scroll)$('#detail').scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(!chartsReady&&window.LightweightCharts){try{initCharts();chartsReady=true}catch(e){console.error(e)}}
+  const a=s.a,c=ST.cfg,L=a.n-1,r=a.R[L],b=BR[r.t];const [zl]=brZone(b);
+  const li=(t,h)=>`<li><span class="ic ${t>0?'pos':t<0?'neg':'zer'}">${t>0?'✓':t<0?'✕':'●'}</span><span>${h}</span></li>`;
+  const conds=[li(a.C[L]>a.mL[L]?1:-1,`<b>상승추세</b> 종가 ${fmt(a.C[L])} ${a.C[L]>a.mL[L]?'>':'<'} ${c.maLong}일선 ${fmt(a.mL[L])} (${pct(s.dist)})`),
+    li(a.r2[L]<c.r2Th?1:-1,`<b>단기 과매도</b> RSI(2) ${fmt(a.r2[L],1)} ${a.r2[L]<c.r2Th?'<':'≥'} ${c.r2Th}`),
+    li(b!=null&&b>=c.brTh?1:-1,`<b>시장 동반 하락</b> 시장 과매도 비율 ${b==null?'–':b.toFixed(1)+'%'} (${zl}, 기준 ${c.brTh}%)`)].join('');
+  const L2=s.last;let plan='';
+  if(L2&&s.ago<=c.hold&&L2.type==='A'){plan=`<div class="plan"><b>${s.ago===0?'오늘 매수 신호':`${s.ago}거래일 전 매수 신호`}</b> (${a.R[L2.i].t}, 그날 시장 과매도 ${L2.br.toFixed(1)}%)${L2.rank?` · 그날 순위 <b>${L2.rank}위/${L2.of}</b> (3일 ${pct(L2.d3)}, ${c.maLong}일선 대비 ${pct(L2.dist)})`:''}<br>${L2.entry?`진입가(다음날 시가) <b>${fmt(L2.entry)}</b> · 현재 ${pct(L2.ret,2)} · `:'진입: 다음 미국 거래일 시가 · '}${L2.done?'보유 기간 종료':`매도: <b>${L2.left}거래일 뒤 종가</b>`}<br><span style="color:var(--mute)">검증(2024-09~2026-11) 기준 이런 신호의 5일 평균 +0.55~0.65%, 오른 비율 53~56%, 10번 중 1번은 −4.7% 이하</span></div>`}
+  if(s.lastC&&s.agoC<=c.hold){const g=s.lastC;plan+=`<div class="plan" style="border-left:3px solid ${g.rec?'#ffd43b':'#5eead4'}">${g.rec?`<span class="badge b-rec">★ 추천</span> 익절가 <b>${g.tp.tgt?fmt(g.tp.tgt):'진입가 +'+c.tp+'%'}</b> · ${g.tp.hit?`익절 완료 (${g.tp.hit}일째)`:g.tp.done?`기한 종료 ${pct(g.tp.ret,2)}`:g.entry?`${g.tp.k}일째, ${g.tp.left}일 남음`:'다음 거래일 시가 매수'}<br>`:''}<b>${s.agoC===0?'오늘 확인형 매수':`${s.agoC}거래일 전 확인형 매수`}</b> (${a.R[g.i].t}) — RSI(14) ${g.r14.toFixed(1)}로 30 상향 돌파 + MACD 히스토그램 양수(${fmt(g.h,2)})${g.vr!=null?` · 신호일 거래량 ${g.vr.toFixed(1)}배 (${g.vr<1?'조용한 반등':g.vr>=2?'거래량 급증':'보통'})`:''}<br>${g.entry?`진입가 <b>${fmt(g.entry)}</b> · 현재 ${pct(g.ret,2)} · `:'진입: 다음 미국 거래일 시가 · '}${g.done?'보유 기간 종료':`매도: <b>${g.left}거래일 뒤 종가</b>`}<br><span style="color:var(--mute)">검증(2024-09~2026-11): 288건, 5일 평균 +1.09%, 오른 비율 63%</span></div>`}
+  if(plan){}else if(L2&&s.ago<c.recent&&L2.type==='B'){plan=`<div class="plan"><b>단독 과매도</b> — 종목 조건은 맞지만 시장이 평온한 날이었습니다. 3년간 이런 경우 5일 평균 −0.02%, 오른 비율 49%로 성과가 나빴습니다.</div>`}
+  $('#verdict').innerHTML=`<div class="v-main"><div class="name">${esc(k)}<div style="font-size:12px;color:var(--mute);font-weight:400">${esc(s.m.name)} · ${esc(SECTOR_KO[s.m.sector]||s.m.sector)}</div></div>
+    <div class="px">${fmt(r.c)}<span class="chg ${cls(s.chg)}">${pct(s.chg,2)}</span></div><div class="dt">${r.t} 종가 기준</div>
+    <span class="badge big ${s.stc}">${s.stl}</span></div>
+    <div class="v-col"><h3>★ 추천 조건 (3개 모두 충족한 날)</h3><ul class="rs">${(()=>{const vr=a.vAvg[L-1]>0?a.R[L].v/a.vAvg[L-1]:null;const cross=a.r14[L-1]<30&&a.r14[L]>=30;return li(cross?1:a.r14[L]<30?0:-1,`<b>RSI(14) 30 상향 돌파</b> ${fmt(a.r14[L-1],1)} → ${fmt(a.r14[L],1)}${cross?'':a.r14[L]<30?' (아직 30 아래 · 후보)':' (이미 30 위)'}`)+li(a.hist[L]>0?1:-1,`<b>MACD 히스토그램 양수</b> ${fmt(a.hist[L],2)} ${a.hist[L]>a.hist[L-1]?'↑':'↓'}`)+li(vr!=null&&vr<c.recVol?1:-1,`<b>거래량 평균 미만</b> ${vr==null?'–':vr.toFixed(2)+'배'}`)})()}${s.cp?`<li><span class="ic pos">●</span><span>추천 후보 · <b>5거래일 안에 추천 신호가 날 확률 ${s.cp.p}%</b> (과거 같은 상태 기준)</span></li>`:''}</ul>
+    <h3 style="margin-top:12px">시장 과매도 신호 조건 (보조)</h3><ul class="rs">${conds}</ul></div>
+    <div class="v-col"><h3>매매 계획</h3>${plan||`<div class="plan">${s.cand?`<b>추천 후보</b> — RSI(14)가 30 아래입니다. RSI(14)가 30을 넘고 MACD 히스토그램이 양수로 돌아서는 날 거래량이 평균 미만이면 다음 날 시가 매수 추천이 뜹니다.<br><br>`:''}시장 과매도 규칙: ${a.C[L]>a.mL[L]?`RSI(2)가 ${c.r2Th} 아래로 떨어지고(현재 ${fmt(a.r2[L],1)}) 시장 과매도 비율이 ${c.brTh}% 이상인 날이 오면 신호가 납니다.`:`${c.maLong}일선 아래라 이 규칙의 대상이 아닙니다.`}</div>`}</div>`;
+  {const pos=[];if(L2&&L2.type==='A'&&s.ago<=c.hold)pos.push(L2);if(s.lastC&&s.agoC<=c.hold)pos.push(s.lastC);
+   if(pos.length){const g=pos.sort((x,y)=>y.i-x.i)[0];const h=holdCheck(a,g,c);
+    if(!h.pending){const box=`<div class="plan" style="margin-top:8px"><b>보유 점검</b> (${h.k}일째, ${h.left}거래일 남음) → <span class="badge ${h.cls}">${h.act}</span><br>
+     ${h.macd?'✓':'✗'} MACD 히스토그램 양수 전환 ${h.macd?'됨':'아직'} &nbsp; ${h.ma5Now?'✓':'✗'} 종가 5일선(${fmt(a.m5[L])}) ${h.ma5Now?'위':'아래'}${h.ma5!=null&&!h.ma5Now?` (${h.ma5}일째에 한때 회복)`:''}<br>
+     <span style="color:var(--mute)">검증(2024-09~2026-11) · 5일 보유 +0.60%/54% · 3일째까지 MACD 미전환 시 정리 +0.46%/54%, 하위10% −3.6% · 5일선 회복 시 매도 +0.42%/64%</span></div>`;
+     const col=document.querySelectorAll('#verdict .v-col');if(col[1])col[1].insertAdjacentHTML('beforeend',box)}}}
+  if(chartsReady)renderCharts(a);
+  const hs=[...(a.sigs||[]),...(a.csigs||[])].sort((x,y)=>y.i-x.i);
+  $('#hist').innerHTML=`<div class="card-h">이 종목의 신호 이력 <span class="note">앱 데이터 기간 · ${hs.length}건</span></div>`+(hs.length?`<table><thead><tr><th>신호일</th><th>구분</th><th>그날 시장 과매도</th><th>진입가</th><th>5일 수익</th></tr></thead><tbody>`+hs.map(g=>`<tr><td>${a.R[g.i].t}</td><td style="text-align:left"><span class="badge ${g.type==='A'?'b-a':g.type==='C'?'b-c':'b-b'}">${g.type==='A'?'매수 신호':g.type==='C'?'확인형 매수':'단독 과매도'}</span></td><td>${g.br==null?'–':g.br.toFixed(1)+'%'}</td><td>${g.entry?fmt(g.entry):'–'}</td><td class="${cls(g.ret)}">${g.ret==null?'–':pct(g.ret,2)+(g.done?'':' (진행 중)')}</td></tr>`).join('')+'</tbody></table>':'<div class="empty">이 기간에 조건을 충족한 날이 없습니다.</div>');
+  if(scroll)$('#detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- bind ---------- */
+function bind(){
+  ['#fSt','#fSec'].forEach(id=>$(id).addEventListener('change',()=>{UI.limit=80;renderScan()}));
+  $('#q').addEventListener('input',()=>{UI.limit=80;renderScan()});
+  $('#scan').addEventListener('click',e=>{const th=e.target.closest('th');if(th){const k=th.dataset.k;UI.sort=UI.sort.k===k?{k,d:-UI.sort.d}:{k,d:(k==='k'||k==='sec'||k==='r2')?1:-1};renderScan();return}const tr=e.target.closest('tr.row');if(tr)openDetail(tr.dataset.k)});
+  $('#btnMore').addEventListener('click',()=>{UI.limit+=100;renderScan()});
+  $('#tiles').addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;const m={rec:'rec',rech:'rech',cand:'cand',a0:'sig',aR:'sig',top:'sig',bR:'b',cf:'conf'}[t.dataset.t];if(m){$('#fSt').value=m;UI.limit=80;renderScan();$('#scan').scrollIntoView({behavior:'smooth',block:'start'})}});
+  $('#track').addEventListener('click',e=>{const tr=e.target.closest('tr.row');if(tr)openDetail(tr.dataset.k)});
+  $('#research').addEventListener('click',e=>{if(e.target.id==='btnDef'){ST.cfg=Object.assign({},DEF);LS.set('sp.dcfg.v2',ST.cfg);computeAll();toast('기본값으로 되돌렸습니다')}});
+  $('#ruleNow').addEventListener('click',e=>{const tr=e.target.closest('tr.row');if(tr)openDetail(tr.dataset.k)});
+  $('#btnClose').addEventListener('click',()=>{$('#detail').classList.remove('on');ST.sel=null});
+  $('#btnRefresh').addEventListener('click',()=>loadAll(true));
+  $('#navRefresh').addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'});loadAll(true)});
+  const fill=cfg=>{$('#cfgGrid').innerHTML=CFG_META.map(([k,l])=>l==null?`<div class="fsec">${k}</div>`:`<label>${l}<input type="number" step="1" data-k="${k}" value="${cfg[k]}"></label>`).join('')};
+  $('#btnCfg').addEventListener('click',()=>{fill(ST.cfg);$('#cfgModal').classList.add('on')});
+  $('#cfgClose').addEventListener('click',()=>$('#cfgModal').classList.remove('on'));
+  $('#cfgModal').addEventListener('click',e=>{if(e.target.id==='cfgModal')$('#cfgModal').classList.remove('on')});
+  $('#cfgReset').addEventListener('click',()=>fill(DEF));
+  $('#cfgSave').addEventListener('click',()=>{const n={};document.querySelectorAll('#cfgGrid input').forEach(i=>{const v=parseFloat(i.value);n[i.dataset.k]=isNaN(v)?DEF[i.dataset.k]:v});n.hold=Math.max(1,Math.round(n.hold));n.tp=Math.max(0.5,n.tp);n.recent=Math.max(1,Math.round(n.recent));n.maLong=Math.min(250,Math.max(20,Math.round(n.maLong)));
+    ST.cfg=n;LS.set('sp.dcfg.v2',n);$('#cfgModal').classList.remove('on');computeAll();toast('설정을 적용했습니다')});
+}
+bind();
+loadAll(false);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&loadedAt&&Date.now()-loadedAt>3*3600e3)loadAll(true)});
+})();
+</script>
+</body>
+</html>
